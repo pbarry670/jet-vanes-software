@@ -1,1 +1,24 @@
 # jet-vanes-software
+This repository contains *some* of the code involved in making the in-flight navigation algorithms function on the flight computer for Georgia Tech's Guidance, Navigation, and Control rocketry club. The flight computer is based on two STM32 microcontrollers working together; all code here runs on the "State Estimation" microcontroller, which reads in sensor data, runs it through the onboard state estimation algorithms, and outputs a state estimate at an extremely high frequency. This state estimate is sent to the "Main" microcontroller, which determines the control input to the system, actuates the servo motors on the rocket, and logs/transmits data. All state estimation algorithms are implemented in C, allowing maximum configurability on the computer engineering side of this team engineering effort.
+
+The state estimation algorithms running depend on the "state machine" that is running on the rocket. The state machine determines what phase of flight the rocket is in, and relies on external information to decide when the rocket has entered its subsequent phase of flight. The phases of flight in the state machine, in order, are:
+- Idle
+- Ground
+- Fast Ascent
+- Slow Ascent
+- Freefall
+- Landed <br>
+<br>
+The vehicle is in "Idle" mode when it first receives power, and it does not exit this mode until the onboard telemetry receives a command to transition to "Ground." In Ground mode, the vehicle should be sitting upright on the pad in its launch configuration. Here, the accelerometer and gyroscope biases are estimated via an Extended Kalman Filter. This filter structure is extremely simple: the states are the accelerometer and gyroscope biases, the process model predicts that these biases stay constant, and the measurement model updates the biases directly. Because the vehicle is unmoving on the pad, any nonzero sensor readings are biases. For example, if the accelerometer is reading an average of 0.2 m/s^2 in its +x direction, with white noise around this mean, this value is the bias that the ground Kalman filter predicts. Once the Kalman filter converges (covariances of its bias estimates sink below some predetermined threshold), and the vehicle detects a vertical acceleration, the rocket transitions from "Ground" mode to "Fast Ascent" mode. <br>
+<br>
+In Fast Ascent, the vehicle is running two navigation algorithms: its in-flight Extended Kalman Filter and its quaternion propagator. The quaternion propagator simply integrates gyroscope measurements to provide an estimate for the rocket's quaternion, which represents the rotation from the inertial frame into the rocket's body frame. The in-flight Kalman filter estimates the position in the inertial frame and the velocity in the body frame. The "predict" step propagates accelerometer measurements, utilizing frame rotations to propagate the position in the inertial frame (since the accelerometer readings come in the vehicle's body frame). The "update" step takes a GPS measurement, correcting for accelerometer drift. Once the acceleration in the body frame is detected to be only the acceleration due to gravity, the vehicle transitions to "Slow Ascent," and once the altitude estimate begins decreasing, the vehicle transitions to "Freefall," deploying parachutes at apogee and at a specified time after reaching apogee. Once the vehicle is no longer accelerating, it enters "Landed" mode. <br>
+<br>
+The initial implementation of these algorithms saw the in-flight Kalman filter running alternating "predict" and "update" steps, which proved to be misguided, as GPS measurements cannot be taken at as high a frequency as accelerometer readings. Additionally, under high-g loads, GPS loses its "lock," spitting back unusable measurements. These state estimation algorithms were first tested on GNC's Avionics Test Rocket in November 2024, and they generated the following data: <br>
+<p align="center">
+<img width="440" height="572" alt="image" src="https://github.com/user-attachments/assets/b0c1c11e-609e-4063-bc73-fbbc74b315b5" />
+</p>
+<p align="center">
+<img width="961" height="542" alt="image" src="https://github.com/user-attachments/assets/765f0200-c054-46dc-9826-e20040edfc46" />
+</p>
+
+As one can see, the erroneous GPS updates greatly disrupted the position (and velocity) estimation. The quaternion propagator, performing in-flight attitude estimation, did its job admirably. While the results from this test flight were not ideal, they did prove that the underlying algorithms are functional; these will be employed on GNC's jet vanes rocket in Fall 2025.
