@@ -18,7 +18,7 @@ The initial implementation of these algorithms saw the in-flight Kalman filter r
 <img width="440" height="572" alt="image" src="https://github.com/user-attachments/assets/b0c1c11e-609e-4063-bc73-fbbc74b315b5" />
 </p>
 <p align="center">
-<img width="961" height="542" alt="image" src="https://github.com/user-attachments/assets/765f0200-c054-46dc-9826-e20040edfc46" />
+<img width="600" height="350" alt="image" src="https://github.com/user-attachments/assets/765f0200-c054-46dc-9826-e20040edfc46" />
 </p>
 
 As one can see, the erroneous GPS updates greatly disrupted the position (and velocity) estimation. The quaternion propagator, performing in-flight attitude estimation, did its job admirably. While the results from this test flight were not ideal, they did prove that the underlying algorithms are functional; these will be employed on GNC's jet vanes rocket in Fall 2025.
